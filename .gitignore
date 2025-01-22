@@ -1,3 +1,7 @@
 env
 Test_4cl_amostra
 __pycache__/
+test
+model.pth
+.env
+train
