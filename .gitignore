@@ -5,3 +5,7 @@ test
 model.pth
 .env
 train
+normalized_images
+*.png
+Treinamento_4cls
+*.pth
