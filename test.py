@@ -7,7 +7,44 @@ import os
 from dotenv import load_dotenv
 from sklearn.metrics import precision_score, f1_score, recall_score
 from torch.utils.data import DataLoader
+from transformed_dataset import TransformedDataset
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+''' Defining some plotting functions '''
+def plot_confusion_matrix(y_true, y_pred, class_names, label):
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names)
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title(f"Confusion Matrix {label}")
+    plt.savefig(f"confusion_matrix_{label}.png")
+    plt.close()
+
+def plot_roc_curve(y_true, y_probs, class_names, label):
+    n_classes = len(class_names)
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+
+    y_true = np.array(y_true)
+
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve((y_true == i).astype(int), y_probs[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    plt.figure(figsize=(8, 6))
+    for i in range(n_classes):
+        plt.plot(fpr[i], tpr[i], label=f"{class_names[i]} (AUC = {roc_auc[i]:.2f})")
+
+    plt.plot([0, 1], [0, 1], "k--", label="Random Guess")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC Curve {label}")
+    plt.legend(loc="lower right")
+    plt.savefig(f"roc_curve_{label}.png")
+    plt.close()
 ''' Check if GPU is available '''
 def get_device():
     if torch.cuda.is_available():
@@ -47,18 +84,26 @@ set_transform = {
         transforms.Resize((224, 224)),
         transforms.Normalize(mean=[0.6972, 0.6460, 0.6218], std=[0.1117, 0.1153, 0.1183])
     ])
+    ,'test_r': transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((224, 224)),
+        transforms.Normalize(mean=[0.6921, 0.6275, 0.5766], std=[0.2520, 0.2715, 0.2727])
+    ])
+    ,'neutral': transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((224, 224)),
+    ])
+
 }
 
-''' Load the environment variables '''
-load_dotenv()
-TEST_DIR = os.getenv('TEST_DIR')
-
-''' Load the dataset '''
-dataset_test = datasets.ImageFolder(TEST_DIR, transform=set_transform['test'])
-dataloader_test = DataLoader(dataset_test, batch_size=1, shuffle=False)
-
-device = get_device()
-model_paths = ['model_1.pth', 'model_2.pth', 'model_3.pth, model_4.pth']
+''' Set the network to test all the given models '''
+def test_model(dataloader_test, classes, mode):
+    device = get_device()
+    if mode == 'normal':
+        mark = 'N'
+    else:
+        mark = 'R'
+    model_paths = [f'model{mark}.pth']
 
 all_precisions = []
 all_recalls = []

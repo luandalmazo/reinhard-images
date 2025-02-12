@@ -40,4 +40,5 @@ def normalize_images(input_dir, target_image_path):
         output_path = os.path.join(output_dir, os.path.basename(image_path))
         cv2.imwrite(output_path, cv2.cvtColor(normalized_image, cv2.COLOR_RGB2BGR))
 
-normalize_images(INPUT_DIR, REFERENCE_GRID)
+for path in INPUT_DIR:
+    normalize_images(path, REFERENCE_GRID)
